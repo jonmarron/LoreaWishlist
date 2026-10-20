@@ -39,6 +39,16 @@
   }
 }
 
+/*
+ * Item cards stay stacked until there is desktop-width room. 1025px rather
+ * than Tailwind's lg (1024px) on purpose: a 12.9" iPad in portrait is exactly
+ * 1024px, and at lg it would flip to the cramped side-by-side layout.
+ * Tablets in landscape (1180px and up) are wide enough and get the row.
+ */
+@theme {
+  --breakpoint-wide: 1025px;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);

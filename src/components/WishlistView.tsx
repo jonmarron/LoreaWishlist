@@ -106,8 +106,10 @@ export function WishlistView() {
           item.claimedBy ? "opacity-70" : ""
         }`}
       >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+        {/* Below --breakpoint-wide the card stacks: the name gets the full width and the
+            buttons sit underneath, pushed to the right. */}
+        <div className="flex flex-col gap-3 wide:flex-row wide:items-start wide:justify-between">
+          <div className="min-w-0 wide:flex-1">
             <h3
               className={`font-semibold break-words ${
                 item.claimedBy ? "line-through decoration-muted" : ""
@@ -135,7 +137,7 @@ export function WishlistView() {
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center justify-end gap-2">
             {item.url ? (
               <a
                 href={item.url}
@@ -173,7 +175,7 @@ export function WishlistView() {
 
         {claimingId === item.id && !item.claimedBy ? (
           <form
-            className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4"
+            className="mt-4 flex flex-col gap-2 border-t border-border pt-4 wide:flex-row wide:items-center"
             onSubmit={(event) => {
               event.preventDefault();
               void claim(item);
@@ -189,22 +191,24 @@ export function WishlistView() {
               onChange={(event) => setDraftName(event.target.value)}
               placeholder="Dein Name"
               maxLength={60}
-              className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+              className="min-w-0 rounded-lg border border-border bg-background px-3 py-1.5 text-sm wide:flex-1"
             />
-            <button
-              type="submit"
-              disabled={busy || !draftName.trim()}
-              className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-accent-contrast disabled:opacity-50"
-            >
-              {busy ? "Wird reserviert…" : "Bestätigen"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setClaimingId(null)}
-              className="rounded-lg px-2 py-1.5 text-sm text-muted hover:text-foreground"
-            >
-              Abbrechen
-            </button>
+            <div className="flex justify-end gap-2">
+              <button
+                type="submit"
+                disabled={busy || !draftName.trim()}
+                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-accent-contrast disabled:opacity-50"
+              >
+                {busy ? "Wird reserviert…" : "Bestätigen"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setClaimingId(null)}
+                className="rounded-lg px-2 py-1.5 text-sm text-muted hover:text-foreground"
+              >
+                Abbrechen
+              </button>
+            </div>
           </form>
         ) : null}
       </li>

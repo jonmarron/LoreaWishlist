@@ -282,8 +282,8 @@ export function AdminView() {
           <ul className="space-y-3">
             {items?.map((item) => (
               <li key={item.id} className="rounded-xl border border-border bg-surface p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
+                <div className="flex flex-col gap-3 wide:flex-row wide:items-start wide:justify-between">
+                  <div className="min-w-0 wide:flex-1">
                     <h3 className="font-semibold break-words">{item.name}</h3>
                     {item.url ? (
                       <a
@@ -303,7 +303,7 @@ export function AdminView() {
                     ) : null}
                   </div>
 
-                  <div className="flex shrink-0 gap-2">
+                  <div className="flex shrink-0 justify-end gap-2">
                     {item.claimedBy ? (
                       <button
                         type="button"
