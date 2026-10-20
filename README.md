@@ -41,7 +41,7 @@ The admin is one specific email address, named in both `admin_email()` in the
 schema and `NEXT_PUBLIC_ADMIN_EMAIL`. **The copy in the database is the one that
 is enforced**; the env var only decides what the UI offers.
 
-All of the above is covered by `npm run test:policies` — 24 checks against the
+All of the above is covered by `npm run test:policies` — 27 checks against the
 real schema, including the concurrent-claim race on two live connections.
 
 ## Setup
@@ -145,7 +145,7 @@ npm run test:policies
 ```
 
 Starts a throwaway Postgres in Docker, applies the real `supabase/schema.sql`
-against a shim of Supabase's `auth.uid()` / `auth.jwt()`, and runs 24 checks:
+against a shim of Supabase's `auth.uid()` / `auth.jwt()`, and runs 27 checks:
 that a visitor cannot delete an item, cannot claim something already taken,
 cannot release someone else's claim, cannot edit a name while claiming, cannot
 write a claim directly to bypass the function, and that two simultaneous claims
@@ -160,7 +160,9 @@ are the only thing protecting the data, and a mistake there is silent.
   Claiming asks only for a name. Updates stream in live, so an item claimed on
   someone's phone greys out on your screen a second later.
 - **`/admin`** — sign in with the admin account, then add items (name, link,
-  optional note), delete them, clear a claim, or rename the list.
+  optional note), edit or delete them, clear a claim, or rename the list. Every
+  item shows whether it is still free or who has reserved it, and the heading
+  counts how many are taken. Editing an item leaves any claim on it intact.
 
 Claimer names are visible to everyone, including you. If you would rather not
 know who picked what, drop the name from the badge in

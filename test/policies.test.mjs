@@ -132,6 +132,48 @@ const tests = [
     assert(rowCount === 1, "admin could not edit");
   }],
 
+  ["admin can edit name, link and note together", async () => {
+    const id = await seedItem();
+    const { rowCount } = await as(
+      admin,
+      "update public.items set name = $2, url = $3, note = $4 where id = $1",
+      [id, "Kletterschuhe", "https://example.com/schuhe", "Größe 32"],
+    );
+    assert(rowCount === 1, "admin could not edit all three fields at once");
+  }],
+
+  ["editing an item leaves an existing claim untouched", async () => {
+    const id = await seedItem({ claimedBy: "Anna", claimedByUid: ANNA });
+    const row = await session(admin, async (run) => {
+      await run("update public.items set name = $2, url = $3, note = $4 where id = $1", [
+        id,
+        "Umbenannt",
+        "https://example.com/neu",
+        "neue Notiz",
+      ]);
+      const { rows } = await run(
+        "select name, claimed_by, claimed_by_uid from public.items where id = $1",
+        [id],
+      );
+      return rows[0];
+    });
+    assert(row.name === "Umbenannt", "the edit did not apply");
+    assert(
+      row.claimed_by === "Anna" && row.claimed_by_uid === ANNA,
+      "editing the item wiped the claim",
+    );
+  }],
+
+  ["a visitor cannot edit an item's note", async () => {
+    const id = await seedItem();
+    const { rowCount } = await as(
+      visitor(ANNA),
+      "update public.items set note = 'hacked' where id = $1",
+      [id],
+    );
+    assert(rowCount === 0, "a visitor edited the note");
+  }],
+
   // ── claiming ──────────────────────────────────────────────────────────────
   ["a visitor can claim an unclaimed item", async () => {
     const id = await seedItem();

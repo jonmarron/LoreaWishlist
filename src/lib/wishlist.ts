@@ -166,6 +166,17 @@ export async function deleteItem(itemId: string): Promise<void> {
   await expectRows(supabase().from("items").delete().eq("id", itemId).select("id"));
 }
 
+/**
+ * Edit an item's details. Deliberately touches only these three columns, so
+ * editing never disturbs an existing claim.
+ */
+export async function updateItem(
+  itemId: string,
+  fields: { name: string; url: string; note: string },
+): Promise<void> {
+  await expectRows(supabase().from("items").update(fields).eq("id", itemId).select("id"));
+}
+
 export async function clearClaim(itemId: string): Promise<void> {
   await expectRows(
     supabase()

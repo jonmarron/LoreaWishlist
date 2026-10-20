@@ -5,9 +5,138 @@ import { describeAuthError, signInAdmin, signOutAdmin, useAuth } from "@/lib/aut
 import { config, configProblems } from "@/lib/config";
 import type { WishlistItem } from "@/lib/types";
 import { useWishlist } from "@/lib/useWishlist";
-import { addItem, clearClaim, deleteItem, describeDbError, renameList } from "@/lib/wishlist";
+import {
+  addItem,
+  clearClaim,
+  deleteItem,
+  describeDbError,
+  renameList,
+  updateItem,
+} from "@/lib/wishlist";
 import { Banner, Shell } from "./Shell";
 import { SetupNotice } from "./SetupNotice";
+
+/** Accept "beispiel.de/x" as well as a full URL. */
+function normalizeUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed || /^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+const fieldClass =
+  "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm";
+
+/**
+ * Inline editor for one item. Mounted only while that item is being edited,
+ * so the draft state seeds itself from the row and is discarded on cancel.
+ */
+function ItemEditor({
+  item,
+  busy,
+  onCancel,
+  onSave,
+}: {
+  item: WishlistItem;
+  busy: boolean;
+  onCancel: () => void;
+  onSave: (fields: { name: string; url: string; note: string }) => void;
+}) {
+  const [name, setName] = useState(item.name);
+  const [url, setUrl] = useState(item.url);
+  const [note, setNote] = useState(item.note);
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        onSave({ name: trimmed, url: normalizeUrl(url), note: note.trim() });
+      }}
+    >
+      <div className="space-y-3">
+        <div>
+          <label htmlFor={`edit-name-${item.id}`} className="mb-1 block text-sm text-muted">
+            Name
+          </label>
+          <input
+            id={`edit-name-${item.id}`}
+            autoFocus
+            required
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            maxLength={160}
+            className={fieldClass}
+          />
+        </div>
+        <div>
+          <label htmlFor={`edit-url-${item.id}`} className="mb-1 block text-sm text-muted">
+            Link
+          </label>
+          <input
+            id={`edit-url-${item.id}`}
+            type="text"
+            inputMode="url"
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            placeholder="beispiel.de/produkt"
+            className={fieldClass}
+          />
+        </div>
+        <div>
+          <label htmlFor={`edit-note-${item.id}`} className="mb-1 block text-sm text-muted">
+            Notiz <span className="text-xs">(optional)</span>
+          </label>
+          <input
+            id={`edit-note-${item.id}`}
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            maxLength={200}
+            className={fieldClass}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg px-3 py-1.5 text-sm text-muted hover:text-foreground"
+        >
+          Abbrechen
+        </button>
+        <button
+          type="submit"
+          disabled={busy || !name.trim()}
+          className="rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-accent-contrast disabled:opacity-50"
+        >
+          {busy ? "Wird gespeichert…" : "Speichern"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Every item says where it stands, so "no badge" is never ambiguous. */
+function ClaimStatus({ item }: { item: WishlistItem }) {
+  if (!item.claimedBy) {
+    return (
+      <p className="mt-2 inline-flex rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted">
+        Noch frei
+      </p>
+    );
+  }
+
+  const claimedAt = item.claimedAt ? new Date(item.claimedAt) : null;
+  return (
+    <p
+      className="mt-2 inline-flex rounded-full bg-claimed-soft px-2.5 py-1 text-xs font-semibold text-claimed"
+      title={claimedAt ? `Reserviert am ${claimedAt.toLocaleString("de-DE")}` : undefined}
+    >
+      Reserviert von {item.claimedBy}
+    </p>
+  );
+}
 
 function SignIn({ signedInAsOther }: { signedInAsOther: boolean }) {
   const [email, setEmail] = useState("");
@@ -86,12 +215,14 @@ export function AdminView() {
   const problems = useMemo(() => configProblems(), []);
   const { user, ready, isAdmin } = useAuth();
   const { items, title, error, setError, loading } = useWishlist();
+  const claimedCount = items?.filter((item) => item.claimedBy).length ?? 0;
 
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   // null means "follow whatever the list says", which avoids seeding this
   // input from async data in an effect.
   const [titleDraft, setTitleDraft] = useState<string | null>(null);
@@ -115,12 +246,10 @@ export function AdminView() {
     const trimmedName = name.trim();
     if (!trimmedName) return;
 
-    // Accept "example.com" as well as a full URL.
-    let trimmedUrl = url.trim();
-    if (trimmedUrl && !/^https?:\/\//i.test(trimmedUrl)) trimmedUrl = `https://${trimmedUrl}`;
-
     setSaving(true);
-    const ok = await run(() => addItem({ name: trimmedName, url: trimmedUrl, note: note.trim() }));
+    const ok = await run(() =>
+      addItem({ name: trimmedName, url: normalizeUrl(url), note: note.trim() }),
+    );
     setSaving(false);
 
     if (ok) {
@@ -136,6 +265,12 @@ export function AdminView() {
       : `„${item.name}“ löschen?`;
     if (!confirm(warning)) return;
     void run(() => deleteItem(item.id), item.id);
+  };
+
+  const saveEdit = (item: WishlistItem, fields: { name: string; url: string; note: string }) => {
+    void run(() => updateItem(item.id, fields), item.id).then((ok) => {
+      if (ok) setEditingId(null);
+    });
   };
 
   const dropClaim = (item: WishlistItem) => {
@@ -270,6 +405,7 @@ export function AdminView() {
       <section className="mt-8">
         <h2 className="mb-3 text-xs font-bold tracking-wide text-muted uppercase">
           Auf der Liste ({items?.length ?? 0})
+          {claimedCount > 0 ? ` · ${claimedCount} reserviert` : null}
         </h2>
 
         {loading ? (
@@ -282,48 +418,64 @@ export function AdminView() {
           <ul className="space-y-3">
             {items?.map((item) => (
               <li key={item.id} className="rounded-xl border border-border bg-surface p-4">
-                <div className="flex flex-col gap-3 wide:flex-row wide:items-start wide:justify-between">
-                  <div className="min-w-0 wide:flex-1">
-                    <h3 className="font-semibold break-words">{item.name}</h3>
-                    {item.url ? (
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-0.5 block truncate font-mono text-xs text-muted hover:text-accent"
-                      >
-                        {item.url}
-                      </a>
-                    ) : null}
-                    {item.note ? <p className="mt-1.5 text-sm text-muted">{item.note}</p> : null}
-                    {item.claimedBy ? (
-                      <p className="mt-2 inline-flex rounded-full bg-claimed-soft px-2.5 py-1 text-xs font-semibold text-claimed">
-                        Reserviert von {item.claimedBy}
-                      </p>
-                    ) : null}
-                  </div>
+                {editingId === item.id ? (
+                  <ItemEditor
+                    item={item}
+                    busy={busyId === item.id}
+                    onCancel={() => setEditingId(null)}
+                    onSave={(fields) => saveEdit(item, fields)}
+                  />
+                ) : (
+                  <div className="flex flex-col gap-3 wide:flex-row wide:items-start wide:justify-between">
+                    <div className="min-w-0 wide:flex-1">
+                      <h3 className="font-semibold break-words">{item.name}</h3>
+                      {item.url ? (
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-0.5 block truncate font-mono text-xs text-muted hover:text-accent"
+                        >
+                          {item.url}
+                        </a>
+                      ) : null}
+                      {item.note ? <p className="mt-1.5 text-sm text-muted">{item.note}</p> : null}
+                      <ClaimStatus item={item} />
+                    </div>
 
-                  <div className="flex shrink-0 justify-end gap-2">
-                    {item.claimedBy ? (
+                    <div className="flex shrink-0 flex-wrap justify-end gap-2">
                       <button
                         type="button"
-                        onClick={() => dropClaim(item)}
+                        onClick={() => {
+                          setError(null);
+                          setEditingId(item.id);
+                        }}
                         disabled={busyId === item.id}
                         className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground disabled:opacity-50"
                       >
-                        Reservierung aufheben
+                        Bearbeiten
                       </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item)}
-                      disabled={busyId === item.id}
-                      className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm font-medium text-danger hover:bg-danger/10 disabled:opacity-50"
-                    >
-                      {busyId === item.id ? "…" : "Löschen"}
-                    </button>
+                      {item.claimedBy ? (
+                        <button
+                          type="button"
+                          onClick={() => dropClaim(item)}
+                          disabled={busyId === item.id}
+                          className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground disabled:opacity-50"
+                        >
+                          Reservierung aufheben
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item)}
+                        disabled={busyId === item.id}
+                        className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm font-medium text-danger hover:bg-danger/10 disabled:opacity-50"
+                      >
+                        {busyId === item.id ? "…" : "Löschen"}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </li>
             ))}
           </ul>
