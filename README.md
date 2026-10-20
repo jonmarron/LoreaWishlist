@@ -71,9 +71,15 @@ Do this *first*. The policies trust that address, and Supabase will not let a
 second account take an email that already exists — creating it now is what stops
 anyone else from registering it with the public anon key.
 
-Then, under Authentication → Sign In / Providers → Email, switch off **Allow new
-users to sign up**. Only you need an account, and turning it off closes the
-question entirely. Anonymous sign-ins are a separate setting and keep working.
+**Leave "Allow new users to sign up" switched on.** It is tempting to turn it
+off — only you need an account — but that setting also blocks anonymous
+sign-ins, and visitors would no longer be able to claim anything. The sign-in
+request comes back as `signup_disabled`.
+
+Leaving it on is safe here. A stranger who registers an account is just another
+visitor: `is_admin()` only ever returns true for the one address above, and
+Supabase will not let a second account take an email that already exists, so
+yours cannot be registered out from under you.
 
 ### 4. Apply the schema
 
@@ -180,7 +186,8 @@ know who picked what, drop the name from the badge in
 | --- | --- |
 | "Not configured yet" | Variables missing at build time. Add them and re-run the deploy. |
 | "The database refused that change" | Schema not applied, or `admin_email()` does not match the account you signed in with. |
-| "Anonymous sign-ins are disabled" | Step 2. |
+| "Anonymous sign-ins are disabled" | The Anonymous provider is off — step 2. |
+| Claiming fails with `signup_disabled` | "Allow new users to sign up" is off; it gates anonymous sign-ins too. Turn it back on — step 3. |
 | Everything fails with a connection error | The free project is paused — resume it from the dashboard. |
 | `items` table does not exist | Step 4 was skipped, or run against a different project. |
 | CSS and JS 404 on the deployed site | `BASE_PATH` does not match the repo name. |
