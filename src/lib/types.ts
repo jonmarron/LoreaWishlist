@@ -15,7 +15,7 @@ export type WishlistItem = {
   claimedAt: string | null;
 };
 
-export const DEFAULT_TITLE = "My Wishlist";
+export const DEFAULT_TITLE = "Meine Wunschliste";
 
 /** Row shape as it comes back from PostgREST. */
 export type ItemRow = {

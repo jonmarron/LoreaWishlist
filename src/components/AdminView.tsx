@@ -5,13 +5,7 @@ import { describeAuthError, signInAdmin, signOutAdmin, useAuth } from "@/lib/aut
 import { config, configProblems } from "@/lib/config";
 import type { WishlistItem } from "@/lib/types";
 import { useWishlist } from "@/lib/useWishlist";
-import {
-  addItem,
-  clearClaim,
-  deleteItem,
-  describeDbError,
-  renameList,
-} from "@/lib/wishlist";
+import { addItem, clearClaim, deleteItem, describeDbError, renameList } from "@/lib/wishlist";
 import { Banner, Shell } from "./Shell";
 import { SetupNotice } from "./SetupNotice";
 
@@ -37,17 +31,17 @@ function SignIn({ signedInAsOther }: { signedInAsOther: boolean }) {
         }
       }}
     >
-      <h2 className="text-lg font-medium">Admin sign-in</h2>
+      <h2 className="text-lg font-semibold">Anmeldung</h2>
       <p className="mt-1 mb-4 text-sm text-muted">
         {signedInAsOther
-          ? "You are signed in, but not as the admin account."
-          : "Sign in with the admin account to manage the list."}
+          ? "Du bist angemeldet, aber nicht als Admin-Konto."
+          : "Melde dich mit dem Admin-Konto an, um die Liste zu verwalten."}
       </p>
 
       <div className="space-y-3">
         <div>
           <label htmlFor="admin-email" className="mb-1 block text-sm text-muted">
-            Email
+            E-Mail
           </label>
           <input
             id="admin-email"
@@ -61,7 +55,7 @@ function SignIn({ signedInAsOther }: { signedInAsOther: boolean }) {
         </div>
         <div>
           <label htmlFor="admin-password" className="mb-1 block text-sm text-muted">
-            Password
+            Passwort
           </label>
           <input
             id="admin-password"
@@ -78,9 +72,9 @@ function SignIn({ signedInAsOther }: { signedInAsOther: boolean }) {
       <button
         type="submit"
         disabled={busy}
-        className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-contrast disabled:opacity-50"
       >
-        {busy ? "Signing in…" : "Sign in"}
+        {busy ? "Wird angemeldet…" : "Anmelden"}
       </button>
 
       {problem ? <p className="mt-3 text-sm text-danger">{problem}</p> : null}
@@ -126,9 +120,7 @@ export function AdminView() {
     if (trimmedUrl && !/^https?:\/\//i.test(trimmedUrl)) trimmedUrl = `https://${trimmedUrl}`;
 
     setSaving(true);
-    const ok = await run(() =>
-      addItem({ name: trimmedName, url: trimmedUrl, note: note.trim() }),
-    );
+    const ok = await run(() => addItem({ name: trimmedName, url: trimmedUrl, note: note.trim() }));
     setSaving(false);
 
     if (ok) {
@@ -140,20 +132,20 @@ export function AdminView() {
 
   const removeItem = (item: WishlistItem) => {
     const warning = item.claimedBy
-      ? `“${item.name}” is claimed by ${item.claimedBy}. Delete it anyway?`
-      : `Delete “${item.name}”?`;
+      ? `„${item.name}“ ist von ${item.claimedBy} reserviert. Trotzdem löschen?`
+      : `„${item.name}“ löschen?`;
     if (!confirm(warning)) return;
     void run(() => deleteItem(item.id), item.id);
   };
 
   const dropClaim = (item: WishlistItem) => {
-    if (!confirm(`Clear the claim by ${item.claimedBy} on “${item.name}”?`)) return;
+    if (!confirm(`Reservierung von ${item.claimedBy} für „${item.name}“ aufheben?`)) return;
     void run(() => clearClaim(item.id), item.id);
   };
 
   if (problems.length > 0) {
     return (
-      <Shell title="Admin">
+      <Shell title="Verwaltung">
         <SetupNotice problems={problems} />
       </Shell>
     );
@@ -161,15 +153,15 @@ export function AdminView() {
 
   if (!ready) {
     return (
-      <Shell title="Admin">
-        <p className="text-sm text-muted">Loading…</p>
+      <Shell title="Verwaltung">
+        <p className="text-sm text-muted">Wird geladen…</p>
       </Shell>
     );
   }
 
   if (!isAdmin) {
     return (
-      <Shell title="Admin">
+      <Shell title="Verwaltung">
         <SignIn signedInAsOther={Boolean(user && !user.is_anonymous)} />
       </Shell>
     );
@@ -177,15 +169,15 @@ export function AdminView() {
 
   return (
     <Shell
-      title="Admin"
-      subtitle={`Signed in as ${user?.email ?? config.adminEmail}`}
+      title="Verwaltung"
+      subtitle={`Angemeldet als ${user?.email ?? config.adminEmail}`}
       action={
         <button
           type="button"
           onClick={() => void signOutAdmin()}
-          className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:text-foreground"
+          className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground"
         >
-          Sign out
+          Abmelden
         </button>
       }
     >
@@ -203,7 +195,7 @@ export function AdminView() {
         }}
       >
         <label htmlFor="list-title" className="mb-1 block text-sm text-muted">
-          List title
+          Titel der Liste
         </label>
         <div className="flex gap-2">
           <input
@@ -216,15 +208,15 @@ export function AdminView() {
           <button
             type="submit"
             disabled={titleDraft === null || !titleDraft.trim() || titleDraft.trim() === title}
-            className="rounded-lg border border-border px-4 py-2 text-sm disabled:opacity-40"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium disabled:opacity-40"
           >
-            Rename
+            Umbenennen
           </button>
         </div>
       </form>
 
       <form onSubmit={submitItem} className="rounded-xl border border-border bg-surface p-5">
-        <h2 className="mb-4 text-lg font-medium">Add an item</h2>
+        <h2 className="mb-4 text-lg font-semibold">Wunsch hinzufügen</h2>
         <div className="space-y-3">
           <div>
             <label htmlFor="item-name" className="mb-1 block text-sm text-muted">
@@ -249,13 +241,13 @@ export function AdminView() {
               inputMode="url"
               value={url}
               onChange={(event) => setUrl(event.target.value)}
-              placeholder="example.com/product"
+              placeholder="beispiel.de/produkt"
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             />
           </div>
           <div>
             <label htmlFor="item-note" className="mb-1 block text-sm text-muted">
-              Note <span className="text-xs">(optional — size, colour, …)</span>
+              Notiz <span className="text-xs">(optional – Größe, Farbe, …)</span>
             </label>
             <input
               id="item-note"
@@ -269,22 +261,22 @@ export function AdminView() {
         <button
           type="submit"
           disabled={saving || !name.trim()}
-          className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-contrast disabled:opacity-50"
         >
-          {saving ? "Adding…" : "Add to wishlist"}
+          {saving ? "Wird hinzugefügt…" : "Zur Wunschliste hinzufügen"}
         </button>
       </form>
 
       <section className="mt-8">
-        <h2 className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">
-          On the list ({items?.length ?? 0})
+        <h2 className="mb-3 text-xs font-bold tracking-wide text-muted uppercase">
+          Auf der Liste ({items?.length ?? 0})
         </h2>
 
         {loading ? (
-          <p className="text-sm text-muted">Loading…</p>
+          <p className="text-sm text-muted">Wird geladen…</p>
         ) : (items?.length ?? 0) === 0 ? (
           <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">
-            Nothing here yet.
+            Noch nichts vorhanden.
           </p>
         ) : (
           <ul className="space-y-3">
@@ -292,7 +284,7 @@ export function AdminView() {
               <li key={item.id} className="rounded-xl border border-border bg-surface p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-medium break-words">{item.name}</h3>
+                    <h3 className="font-semibold break-words">{item.name}</h3>
                     {item.url ? (
                       <a
                         href={item.url}
@@ -305,8 +297,8 @@ export function AdminView() {
                     ) : null}
                     {item.note ? <p className="mt-1.5 text-sm text-muted">{item.note}</p> : null}
                     {item.claimedBy ? (
-                      <p className="mt-2 inline-flex rounded-full bg-claimed-soft px-2.5 py-1 text-xs font-medium text-claimed">
-                        Claimed by {item.claimedBy}
+                      <p className="mt-2 inline-flex rounded-full bg-claimed-soft px-2.5 py-1 text-xs font-semibold text-claimed">
+                        Reserviert von {item.claimedBy}
                       </p>
                     ) : null}
                   </div>
@@ -317,18 +309,18 @@ export function AdminView() {
                         type="button"
                         onClick={() => dropClaim(item)}
                         disabled={busyId === item.id}
-                        className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:text-foreground disabled:opacity-50"
+                        className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground disabled:opacity-50"
                       >
-                        Clear claim
+                        Reservierung aufheben
                       </button>
                     ) : null}
                     <button
                       type="button"
                       onClick={() => removeItem(item)}
                       disabled={busyId === item.id}
-                      className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
+                      className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm font-medium text-danger hover:bg-danger/10 disabled:opacity-50"
                     >
-                      {busyId === item.id ? "…" : "Delete"}
+                      {busyId === item.id ? "…" : "Löschen"}
                     </button>
                   </div>
                 </div>

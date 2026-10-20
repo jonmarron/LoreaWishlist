@@ -1,30 +1,41 @@
 @import "tailwindcss";
 
+/*
+ * Palette lifted from the party invitation: parchment behind the lettering,
+ * the deep petrol blue of "Lorea wird 7" as the text colour, leaf green from
+ * the forest for anything actionable, and the golden 7 for items already taken.
+ * Green means "yours for the taking", gold means "someone got there first".
+ */
+
 :root {
-  --background: #fbfaf8;
-  --surface: #ffffff;
-  --border: #e7e2da;
-  --foreground: #1c1917;
-  --muted: #78716c;
-  --accent: #b4541f;
-  --accent-soft: #fdf2ea;
-  --claimed: #3f6212;
-  --claimed-soft: #f2f7e8;
-  --danger: #b91c1c;
+  --background: #f8f1df;
+  --surface: #fffcf4;
+  --border: #e4d9bd;
+  --foreground: #17475c;
+  --muted: #5a6d72;
+  --accent: #3f7d3a;
+  --accent-soft: #e8f3e0;
+  /* Text that sits on top of --accent. A token, because the accent is dark in
+     light mode and light in dark mode -- hardcoding white breaks one of them. */
+  --accent-contrast: #ffffff;
+  --claimed: #7d5a0c;
+  --claimed-soft: #fbf0d4;
+  --danger: #b3362b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #16151a;
-    --surface: #201f26;
-    --border: #35333d;
-    --foreground: #f0efed;
-    --muted: #a09daa;
-    --accent: #fb923c;
-    --accent-soft: #2e2118;
-    --claimed: #a3e635;
-    --claimed-soft: #1e2414;
-    --danger: #f87171;
+    --background: #10232c;
+    --surface: #17323d;
+    --border: #2a4a57;
+    --foreground: #e9f2f1;
+    --muted: #9bb3bb;
+    --accent: #7ac95f;
+    --accent-soft: #163024;
+    --accent-contrast: #08180c;
+    --claimed: #e8c05c;
+    --claimed-soft: #2d2616;
+    --danger: #f08b80;
   }
 }
 
@@ -36,17 +47,19 @@
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-contrast: var(--accent-contrast);
   --color-claimed: var(--claimed);
   --color-claimed-soft: var(--claimed-soft);
   --color-danger: var(--danger);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-nunito);
+  --font-display: var(--font-caveat);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-nunito), system-ui, sans-serif;
 }
 
 /* Keyboard focus stays visible everywhere; pointer clicks stay quiet. */

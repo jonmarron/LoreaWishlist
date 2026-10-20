@@ -7,7 +7,7 @@ import { DEFAULT_TITLE, itemFromRow, type ItemRow, type WishlistItem } from "./t
 /** Thrown when someone else claimed the item a moment earlier. */
 export class ClaimTakenError extends Error {
   constructor(readonly by: string) {
-    super(`${by} claimed it moments before you did.`);
+    super(`${by} war einen Moment schneller als du.`);
     this.name = "ClaimTakenError";
   }
 }
@@ -15,7 +15,7 @@ export class ClaimTakenError extends Error {
 /** Thrown when a write was silently dropped by row-level security. */
 class NotAllowedError extends Error {
   constructor() {
-    super("The database refused that change.");
+    super("Die Datenbank hat diese Änderung abgelehnt.");
     this.name = "NotAllowedError";
   }
 }
@@ -28,26 +28,26 @@ export function describeDbError(cause: unknown): string {
 
   switch (code) {
     case "42501": // insufficient_privilege
-      return "The database refused that change. Sign in as the admin account, and check the schema has been applied.";
+      return "Die Datenbank hat diese Änderung abgelehnt. Melde dich als Admin an und prüf, ob das Schema eingespielt wurde.";
     case "22023":
-      return "That name will not do — it must be between 1 and 60 characters.";
+      return "Dieser Name geht nicht – er muss zwischen 1 und 60 Zeichen lang sein.";
     case "P0002":
-      return "That item no longer exists.";
+      return "Diesen Wunsch gibt es nicht mehr.";
     case "42P01":
-      return "The `items` table does not exist yet. Run supabase/schema.sql in the SQL editor.";
+      return "Die Tabelle „items“ existiert noch nicht. Führ supabase/schema.sql im SQL-Editor aus.";
     case "PGRST202":
-      return "The claim_item function is missing. Run supabase/schema.sql in the SQL editor.";
+      return "Die Funktion claim_item fehlt. Führ supabase/schema.sql im SQL-Editor aus.";
     default:
       break;
   }
 
   if (cause instanceof NotAllowedError) {
-    return "The database refused that change. Sign in as the admin account, and check the schema has been applied.";
+    return "Die Datenbank hat diese Änderung abgelehnt. Melde dich als Admin an und prüf, ob das Schema eingespielt wurde.";
   }
   if (message.toLowerCase().includes("failed to fetch")) {
-    return "Could not reach Supabase. Check your connection — a free project pauses after a week idle and needs resuming from the dashboard.";
+    return "Supabase ist nicht erreichbar. Ein kostenloses Projekt pausiert nach etwa einer Woche ohne Nutzung und muss im Dashboard wieder gestartet werden.";
   }
-  return message || "Something went wrong.";
+  return message || "Da ist etwas schiefgelaufen.";
 }
 
 async function fetchItems(): Promise<WishlistItem[]> {

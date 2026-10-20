@@ -15,8 +15,10 @@ export function Shell({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-10 sm:py-14">
       <header className="mb-8">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-display text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
+            {title}
+          </h1>
           {action}
         </div>
         {subtitle ? <p className="mt-2 text-sm text-muted">{subtitle}</p> : null}
@@ -25,12 +27,12 @@ export function Shell({
       <main className="flex-1">{children}</main>
 
       <footer className="mt-12 border-t border-border pt-4 text-xs text-muted">
-        <Link href="/" className="underline-offset-4 hover:underline">
-          Wishlist
+        <Link href="/" className="underline-offset-4 hover:text-accent hover:underline">
+          Wunschliste
         </Link>
         <span className="mx-2">·</span>
-        <Link href="/admin" className="underline-offset-4 hover:underline">
-          Admin
+        <Link href="/admin" className="underline-offset-4 hover:text-accent hover:underline">
+          Verwaltung
         </Link>
       </footer>
     </div>

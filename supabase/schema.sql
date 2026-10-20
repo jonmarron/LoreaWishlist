@@ -43,7 +43,7 @@ create table if not exists public.items (
 -- Single-row table: the `id` column can only ever hold true.
 create table if not exists public.meta (
   id    boolean primary key default true check (id),
-  title text not null default 'My Wishlist' check (char_length(title) between 1 and 80)
+  title text not null default 'Meine Wunschliste' check (char_length(title) between 1 and 80)
 );
 
 insert into public.meta (id) values (true) on conflict (id) do nothing;

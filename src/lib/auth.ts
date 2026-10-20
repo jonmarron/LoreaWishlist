@@ -93,21 +93,24 @@ export function describeAuthError(cause: unknown): string {
   const message = (cause as { message?: string })?.message ?? "";
   const lower = message.toLowerCase();
 
-  if (lower.includes("invalid login credentials")) return "Wrong email or password.";
+  if (lower.includes("invalid login credentials")) return "E-Mail oder Passwort stimmt nicht.";
   if (lower.includes("email logins are disabled")) {
-    return "Email sign-in is disabled for this Supabase project.";
+    return "Die Anmeldung per E-Mail ist für dieses Supabase-Projekt deaktiviert.";
+  }
+  if (lower.includes("signup") && lower.includes("disabled")) {
+    return "Registrierungen sind in Supabase deaktiviert – das blockiert auch die anonyme Anmeldung.";
   }
   if (lower.includes("anonymous sign-ins are disabled")) {
-    return "Anonymous sign-ins are disabled — enable them in Supabase so visitors can claim items.";
+    return "Anonyme Anmeldungen sind deaktiviert – in Supabase aktivieren, damit reserviert werden kann.";
   }
   if (lower.includes("email not confirmed")) {
-    return "That account still needs its email confirmed, or confirmations turned off.";
+    return "Für dieses Konto muss die E-Mail noch bestätigt werden.";
   }
   if (lower.includes("rate limit") || lower.includes("too many")) {
-    return "Too many attempts. Wait a minute and try again.";
+    return "Zu viele Versuche. Warte kurz und probier es noch einmal.";
   }
   if (lower.includes("failed to fetch") || lower.includes("network")) {
-    return "Could not reach Supabase. Check your connection and the project URL.";
+    return "Supabase ist nicht erreichbar. Prüf die Verbindung und die Projekt-URL.";
   }
-  return message || "Could not sign in.";
+  return message || "Anmeldung nicht möglich.";
 }

@@ -18,6 +18,25 @@ function hostOf(url: string): string {
   }
 }
 
+function ExternalLinkIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      className="size-3.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M7 3H4a1.5 1.5 0 0 0-1.5 1.5v7.5A1.5 1.5 0 0 0 4 13.5h7.5A1.5 1.5 0 0 0 13 12V9" />
+      <path d="M10 2.5h3.5V6" />
+      <path d="M7.5 8.5 13.5 2.5" />
+    </svg>
+  );
+}
+
 export function WishlistView() {
   const problems = useMemo(() => configProblems(), []);
   const { items, title, error, setError, loading } = useWishlist();
@@ -46,7 +65,7 @@ export function WishlistView() {
       setClaimingId(null);
       setError(null);
     } catch (cause) {
-      // Losing a race is expected and not an error worth a red banner.
+      // Losing a race is expected and not worth a red banner.
       const message = describeDbError(cause);
       if ((cause as { name?: string })?.name === "ClaimTakenError") {
         setNotice(message);
@@ -90,7 +109,7 @@ export function WishlistView() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h3
-              className={`font-medium break-words ${
+              className={`font-semibold break-words ${
                 item.claimedBy ? "line-through decoration-muted" : ""
               }`}
             >
@@ -110,31 +129,43 @@ export function WishlistView() {
             {host ? <p className="mt-0.5 font-mono text-xs text-muted">{host}</p> : null}
             {item.note ? <p className="mt-1.5 text-sm text-muted">{item.note}</p> : null}
             {item.claimedBy ? (
-              <p className="mt-2 inline-flex rounded-full bg-claimed-soft px-2.5 py-1 text-xs font-medium text-claimed">
-                Claimed by {isMine ? "you" : item.claimedBy}
+              <p className="mt-2 inline-flex rounded-full bg-claimed-soft px-2.5 py-1 text-xs font-semibold text-claimed">
+                {isMine ? "Von dir reserviert" : `Reserviert von ${item.claimedBy}`}
               </p>
             ) : null}
           </div>
 
-          <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
+            {item.url ? (
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-accent hover:text-accent"
+              >
+                <ExternalLinkIcon />
+                Ansehen
+              </a>
+            ) : null}
+
             {item.claimedBy ? (
               isMine ? (
                 <button
                   type="button"
                   onClick={() => void release(item)}
                   disabled={busy}
-                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:text-foreground disabled:opacity-50"
+                  className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground disabled:opacity-50"
                 >
-                  {busy ? "Releasing…" : "Release"}
+                  {busy ? "Wird freigegeben…" : "Freigeben"}
                 </button>
               ) : null
             ) : claimingId === item.id ? null : (
               <button
                 type="button"
                 onClick={() => startClaim(item)}
-                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
+                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-accent-contrast hover:opacity-90"
               >
-                Claim
+                Reservieren
               </button>
             )}
           </div>
@@ -149,30 +180,30 @@ export function WishlistView() {
             }}
           >
             <label htmlFor={`name-${item.id}`} className="sr-only">
-              Your name
+              Dein Name
             </label>
             <input
               id={`name-${item.id}`}
               autoFocus
               value={draftName}
               onChange={(event) => setDraftName(event.target.value)}
-              placeholder="Your name"
+              placeholder="Dein Name"
               maxLength={60}
               className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
             />
             <button
               type="submit"
               disabled={busy || !draftName.trim()}
-              className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-accent-contrast disabled:opacity-50"
             >
-              {busy ? "Claiming…" : "Confirm"}
+              {busy ? "Wird reserviert…" : "Bestätigen"}
             </button>
             <button
               type="button"
               onClick={() => setClaimingId(null)}
               className="rounded-lg px-2 py-1.5 text-sm text-muted hover:text-foreground"
             >
-              Cancel
+              Abbrechen
             </button>
           </form>
         ) : null}
@@ -182,7 +213,7 @@ export function WishlistView() {
 
   if (problems.length > 0) {
     return (
-      <Shell title="Wishlist">
+      <Shell title="Wunschliste">
         <SetupNotice problems={problems} />
       </Shell>
     );
@@ -191,16 +222,16 @@ export function WishlistView() {
   return (
     <Shell
       title={title}
-      subtitle="Pick anything that is still open and claim it, so nobody buys the same thing twice."
+      subtitle="Such dir etwas aus, das noch frei ist, und reservier es – so schenkt niemand zweimal dasselbe."
     >
       {error ? <Banner>{error}</Banner> : null}
       {notice ? <Banner tone="info">{notice}</Banner> : null}
 
       {loading ? (
-        <p className="text-sm text-muted">Loading…</p>
+        <p className="text-sm text-muted">Wird geladen…</p>
       ) : open.length === 0 && claimed.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">
-          Nothing on the list yet.
+          Noch nichts auf der Liste.
         </p>
       ) : (
         <div className="space-y-8">
@@ -208,8 +239,8 @@ export function WishlistView() {
 
           {claimed.length > 0 ? (
             <section>
-              <h2 className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">
-                Already claimed
+              <h2 className="mb-3 text-xs font-bold tracking-wide text-muted uppercase">
+                Bereits reserviert
               </h2>
               <ul className="space-y-3">{claimed.map(renderItem)}</ul>
             </section>

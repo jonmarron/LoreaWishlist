@@ -1,9 +1,9 @@
 export function SetupNotice({ problems }: { problems: string[] }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-6">
-      <h2 className="text-lg font-medium">Not configured yet</h2>
+      <h2 className="text-lg font-semibold">Noch nicht konfiguriert</h2>
       <p className="mt-2 text-sm text-muted">
-        This build is missing the settings it needs to reach the data repo:
+        Diesem Build fehlen die Einstellungen, um Supabase zu erreichen:
       </p>
       <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-danger">
         {problems.map((problem) => (
@@ -11,9 +11,9 @@ export function SetupNotice({ problems }: { problems: string[] }) {
         ))}
       </ul>
       <p className="mt-4 text-sm text-muted">
-        Locally, copy <code className="font-mono text-xs">.env.example</code> to{" "}
-        <code className="font-mono text-xs">.env.local</code> and fill it in. For the deployed
-        site, set the same values as repository variables and secrets — see{" "}
+        Lokal: <code className="font-mono text-xs">.env.example</code> nach{" "}
+        <code className="font-mono text-xs">.env.local</code> kopieren und ausfüllen. Für die
+        veröffentlichte Seite dieselben Werte als Repository-Variablen setzen – siehe{" "}
         <code className="font-mono text-xs">README.md</code>.
       </p>
     </div>
