@@ -9,17 +9,58 @@
 --   anyone            read the list
 --   any visitor       claim an item nobody has claimed
 --   the claimer       release that one claim, and nothing else
---   the admin         add, edit, delete, clear any claim, rename the list
+--   an admin          add, edit, delete, clear any claim, rename the list
 -- =============================================================================
 
 
+-- ── who counts as an admin ───────────────────────────────────────────────────
+--
+-- One row per admin. To add someone: create their account under
+-- Authentication -> Users, then insert their address here. It takes effect on
+-- their next page load -- no redeploy, no code change.
+--
+--   insert into public.admins (email) values (lower('someone@example.com'));
+--
+-- To remove an admin, delete their row. Delete the last row and nobody can
+-- reach the admin page until you insert one again.
+
+create table if not exists public.admins (
+  email      text primary key check (email = lower(email) and position('@' in email) > 1),
+  created_at timestamptz not null default now()
+);
+
 -- ─────────────────────────────────────────────────────────────────────────────
--- CHANGE THIS to your admin email address, then run the file.
--- It must match NEXT_PUBLIC_ADMIN_EMAIL in the site build.
+-- CHANGE THIS to your own address before running the file the first time.
 -- ─────────────────────────────────────────────────────────────────────────────
-create or replace function public.admin_email() returns text
-  language sql immutable
-  as $$ select lower('you@example.com') $$;
+insert into public.admins (email) values (lower('you@example.com'))
+  on conflict (email) do nothing;
+
+-- The table is unreachable through the API: RLS is on and there are no
+-- policies, so nobody can read who the admins are, and nobody can add
+-- themselves. Only the dashboard and the service-role key can touch it.
+alter table public.admins enable row level security;
+revoke all on public.admins from anon, authenticated;
+
+-- security definer, so it can consult the admins table on behalf of a caller
+-- who has no access to it at all.
+create or replace function public.is_admin() returns boolean
+  language sql stable
+  security definer
+  set search_path = ''
+  as $$
+    select coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false
+       and exists (
+         select 1 from public.admins
+          where email = lower(coalesce(auth.jwt() ->> 'email', ''))
+       )
+  $$;
+
+-- The policies evaluate this as the calling role, and the browser calls it
+-- directly to find out whether to offer the admin page.
+grant execute on function public.is_admin() to anon, authenticated;
+
+-- Superseded by the admins table.
+drop function if exists public.admin_email();
 
 
 -- ── tables ───────────────────────────────────────────────────────────────────
@@ -47,16 +88,6 @@ create table if not exists public.meta (
 );
 
 insert into public.meta (id) values (true) on conflict (id) do nothing;
-
-
--- ── who is the admin ─────────────────────────────────────────────────────────
-
-create or replace function public.is_admin() returns boolean
-  language sql stable
-  as $$
-    select coalesce(lower(auth.jwt() ->> 'email'), '') = public.admin_email()
-       and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false
-  $$;
 
 
 -- ── row-level security ───────────────────────────────────────────────────────

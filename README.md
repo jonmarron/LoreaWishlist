@@ -37,11 +37,13 @@ are physically unable to write anything else, and direct UPDATE is admin-only.
 when two people tap Claim at the same instant Postgres picks a winner and the
 loser is told who got there first.
 
-The admin is one specific email address, named in both `admin_email()` in the
-schema and `NEXT_PUBLIC_ADMIN_EMAIL`. **The copy in the database is the one that
-is enforced**; the env var only decides what the UI offers.
+Admins are rows in an `admins` table. `is_admin()` checks membership in it, and
+the browser asks the database that question rather than deciding for itself — so
+there is one source of truth and nothing to keep in sync. The table has RLS on
+with no policies at all, meaning nobody can read who the admins are or add
+themselves through the API; only the dashboard can.
 
-All of the above is covered by `npm run test:policies` — 27 checks against the
+All of the above is covered by `npm run test:policies` — 32 checks against the
 real schema, including the concurrent-claim race on two live connections.
 
 ## Setup
@@ -83,12 +85,12 @@ yours cannot be registered out from under you.
 
 ### 4. Apply the schema
 
-Open `supabase/schema.sql`, change `admin_email()` to the address from step 3:
+Open `supabase/schema.sql` and change the seeded admin to the address from
+step 3 — the file ships with a placeholder, and leaving it would lock you out:
 
 ```sql
-create or replace function public.admin_email() returns text
-  language sql immutable
-  as $$ select lower('you@example.com') $$;
+insert into public.admins (email) values (lower('you@example.com'))
+  on conflict (email) do nothing;
 ```
 
 Then paste the whole file into the dashboard's **SQL Editor** and run it. It is
@@ -109,7 +111,6 @@ Actions → **Variables**:
 | --- | --- |
 | `SUPABASE_URL` | Project URL |
 | `SUPABASE_ANON_KEY` | anon / publishable key |
-| `ADMIN_EMAIL` | the address from step 3 |
 
 Variables, not secrets — none of this is confidential, and treating it as a
 secret would only make it harder to debug.
@@ -128,6 +129,30 @@ the `BASE_PATH` line from `.github/workflows/deploy.yml`.
 Authentication → URL Configuration → Redirect URLs: add
 `https://<you>.github.io/<repo>/**`.
 
+## Adding another admin
+
+Two steps, both in the Supabase dashboard. No code change, no redeploy.
+
+1. **Authentication → Users → Add user** — create their account and tick
+   auto-confirm. The `admins` table authorises an identity; it does not create
+   one, so this part cannot be skipped.
+2. **SQL Editor** — add them to the table:
+
+   ```sql
+   insert into public.admins (email) values (lower('someone@example.com'))
+     on conflict (email) do nothing;
+   ```
+
+It takes effect on their next page load. To remove an admin, delete the row:
+
+```sql
+delete from public.admins where email = lower('someone@example.com');
+```
+
+Emails are stored lowercase (a CHECK constraint enforces it), so always wrap
+them in `lower(...)`. Deleting the last row leaves nobody able to reach the
+admin page — you would have to insert one again from the dashboard to recover.
+
 ## Local development
 
 ```bash
@@ -145,7 +170,7 @@ npm run test:policies
 ```
 
 Starts a throwaway Postgres in Docker, applies the real `supabase/schema.sql`
-against a shim of Supabase's `auth.uid()` / `auth.jwt()`, and runs 27 checks:
+against a shim of Supabase's `auth.uid()` / `auth.jwt()`, and runs 32 checks:
 that a visitor cannot delete an item, cannot claim something already taken,
 cannot release someone else's claim, cannot edit a name while claiming, cannot
 write a claim directly to bypass the function, and that two simultaneous claims
@@ -187,7 +212,8 @@ know who picked what, drop the name from the badge in
 | Symptom | Cause |
 | --- | --- |
 | "Not configured yet" | Variables missing at build time. Add them and re-run the deploy. |
-| "The database refused that change" | Schema not applied, or `admin_email()` does not match the account you signed in with. |
+| "The database refused that change" | Schema not applied, or your address is not in the `admins` table. |
+| Signed in, but the admin page keeps asking you to sign in | Your address is not in `admins`, or it is stored with different capitalisation (it must be lowercase). |
 | "Anonymous sign-ins are disabled" | The Anonymous provider is off — step 2. |
 | Claiming fails with `signup_disabled` | "Allow new users to sign up" is off; it gates anonymous sign-ins too. Turn it back on — step 3. |
 | Everything fails with a connection error | The free project is paused — resume it from the dashboard. |

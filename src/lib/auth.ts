@@ -2,12 +2,19 @@
 
 import type { User } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
-import { config } from "./config";
 import { supabase } from "./supabase";
 
-type AuthState = { user: User | null; ready: boolean };
+type AuthState = {
+  user: User | null;
+  /** The stored session has been read back; we know whether anyone is signed in. */
+  ready: boolean;
+  /** Confirmed by the database, never inferred from the email in the browser. */
+  isAdmin: boolean;
+  /** An is_admin() check is in flight; the answer is not known yet. */
+  checking: boolean;
+};
 
-const SERVER_STATE: AuthState = { user: null, ready: false };
+const SERVER_STATE: AuthState = { user: null, ready: false, isAdmin: false, checking: false };
 
 let state: AuthState = SERVER_STATE;
 let started = false;
@@ -18,20 +25,42 @@ function publish(next: AuthState): void {
   for (const listener of listeners) listener();
 }
 
+/**
+ * Who is an admin lives in the database, so the browser has to ask. Each answer
+ * is tagged with the request that produced it, and a late reply from a previous
+ * sign-in is discarded rather than overwriting the current one.
+ */
+let generation = 0;
+
+async function resolve(user: User | null): Promise<void> {
+  const mine = ++generation;
+
+  if (!user || user.is_anonymous) {
+    publish({ user, ready: true, isAdmin: false, checking: false });
+    return;
+  }
+
+  // `checking` keeps the admin page on its loading state instead of flashing
+  // the sign-in form at someone who is in fact an admin.
+  publish({ user, ready: true, isAdmin: false, checking: true });
+
+  const { data, error } = await supabase().rpc("is_admin");
+  if (mine !== generation) return;
+
+  publish({ user, ready: true, isAdmin: !error && data === true, checking: false });
+}
+
 function start(): void {
   if (started) return;
   started = true;
 
-  // onAuthStateChange fires immediately with the restored session, but only
-  // once the client has read it back out of storage; getSession settles the
-  // `ready` flag even when there is no session at all.
   supabase().auth.onAuthStateChange((_event, session) => {
-    publish({ user: session?.user ?? null, ready: true });
+    void resolve(session?.user ?? null);
   });
 
   void supabase()
     .auth.getSession()
-    .then(({ data }) => publish({ user: data.session?.user ?? null, ready: true }));
+    .then(({ data }) => resolve(data.session?.user ?? null));
 }
 
 function subscribe(listener: () => void): () => void {
@@ -42,18 +71,8 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/**
- * The admin is one specific address. The same address is in admin_email() in
- * the database -- this check only decides what the UI offers.
- */
-function isAdminUser(user: User | null): boolean {
-  if (!user || user.is_anonymous || !user.email || !config.adminEmail) return false;
-  return user.email.toLowerCase() === config.adminEmail.toLowerCase();
-}
-
 export function useAuth() {
-  const current = useSyncExternalStore(subscribe, () => state, () => SERVER_STATE);
-  return { user: current.user, ready: current.ready, isAdmin: isAdminUser(current.user) };
+  return useSyncExternalStore(subscribe, () => state, () => SERVER_STATE);
 }
 
 let pendingVisitor: Promise<void> | null = null;

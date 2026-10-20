@@ -11,7 +11,8 @@
 import { readFileSync } from "node:fs";
 import pg from "pg";
 
-const ADMIN_EMAIL = "you@example.com"; // must match admin_email() in the schema
+const ADMIN_EMAIL = "you@example.com"; // the address the schema seeds into public.admins
+const SECOND_ADMIN = "zweiter@example.com";
 
 const ANNA = "11111111-1111-1111-1111-111111111111";
 const BEN = "22222222-2222-2222-2222-222222222222";
@@ -265,6 +266,68 @@ const tests = [
 
   ["there can only ever be one meta row", async () => {
     await assertRejected(client.query("insert into public.meta (id) values (false)"));
+  }],
+
+  // ── who is an admin ───────────────────────────────────────────────────────
+  ["inserting an email into admins makes that person an admin", async () => {
+    const promoted = {
+      role: "authenticated",
+      claims: { sub: BEN, email: SECOND_ADMIN, is_anonymous: false },
+    };
+
+    const before = await as(promoted, "select public.is_admin() as ok");
+    assert(before.rows[0].ok === false, "a stranger was already an admin");
+
+    await client.query("insert into public.admins (email) values ($1)", [SECOND_ADMIN]);
+    try {
+      const after = await as(promoted, "select public.is_admin() as ok");
+      assert(after.rows[0].ok === true, "inserting into admins did not grant access");
+
+      const { rowCount } = await as(
+        promoted,
+        "insert into public.items (name, url, note) values ('Von Admin 2', '', '')",
+      );
+      assert(rowCount === 1, "the new admin still could not add an item");
+    } finally {
+      await client.query("delete from public.admins where email = $1", [SECOND_ADMIN]);
+    }
+  }],
+
+  ["removing someone from admins revokes it again", async () => {
+    const demoted = {
+      role: "authenticated",
+      claims: { sub: BEN, email: SECOND_ADMIN, is_anonymous: false },
+    };
+    await client.query("insert into public.admins (email) values ($1)", [SECOND_ADMIN]);
+    await client.query("delete from public.admins where email = $1", [SECOND_ADMIN]);
+
+    const { rows } = await as(demoted, "select public.is_admin() as ok");
+    assert(rows[0].ok === false, "a removed admin kept their access");
+  }],
+
+  ["an anonymous visitor is never an admin, whatever the table says", async () => {
+    // Same uid, but the anonymous flag set and no email claim.
+    const { rows } = await as(
+      { role: "authenticated", claims: { sub: ANNA, is_anonymous: true } },
+      "select public.is_admin() as ok",
+    );
+    assert(rows[0].ok === false, "an anonymous session passed the admin check");
+  }],
+
+  ["nobody can read the list of admins through the API", async () => {
+    await assertRejected(as(signedOut, "select * from public.admins"));
+    await assertRejected(as(visitor(ANNA), "select * from public.admins"));
+    await assertRejected(as(admin, "select * from public.admins"));
+  }],
+
+  ["nobody can make themselves an admin through the API", async () => {
+    await assertRejected(
+      as(visitor(ANNA), "insert into public.admins (email) values ('mallory@example.com')"),
+    );
+    // Not even an existing admin -- that is a dashboard-only operation.
+    await assertRejected(
+      as(admin, "insert into public.admins (email) values ('mallory@example.com')"),
+    );
   }],
 
   // ── the race that matters ─────────────────────────────────────────────────

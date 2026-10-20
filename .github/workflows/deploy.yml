@@ -35,7 +35,6 @@ jobs:
           # access is decided by the row-level security policies in Postgres.
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_ADMIN_EMAIL: ${{ vars.ADMIN_EMAIL }}
           # Project site served from /<repo>. Delete this line for a user/org
           # site served from the domain root.
           BASE_PATH: /${{ github.event.repository.name }}

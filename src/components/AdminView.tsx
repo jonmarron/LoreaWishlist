@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { describeAuthError, signInAdmin, signOutAdmin, useAuth } from "@/lib/auth";
-import { config, configProblems } from "@/lib/config";
+import { configProblems } from "@/lib/config";
 import type { WishlistItem } from "@/lib/types";
 import { useWishlist } from "@/lib/useWishlist";
 import {
@@ -213,7 +213,7 @@ function SignIn({ signedInAsOther }: { signedInAsOther: boolean }) {
 
 export function AdminView() {
   const problems = useMemo(() => configProblems(), []);
-  const { user, ready, isAdmin } = useAuth();
+  const { user, ready, isAdmin, checking } = useAuth();
   const { items, title, error, setError, loading } = useWishlist();
   const claimedCount = items?.filter((item) => item.claimedBy).length ?? 0;
 
@@ -286,7 +286,7 @@ export function AdminView() {
     );
   }
 
-  if (!ready) {
+  if (!ready || checking) {
     return (
       <Shell title="Verwaltung">
         <p className="text-sm text-muted">Wird geladen…</p>
@@ -305,7 +305,7 @@ export function AdminView() {
   return (
     <Shell
       title="Verwaltung"
-      subtitle={`Angemeldet als ${user?.email ?? config.adminEmail}`}
+      subtitle={`Angemeldet als ${user?.email ?? ""}`}
       action={
         <button
           type="button"

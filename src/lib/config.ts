@@ -10,12 +10,6 @@
 export const config = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-  /**
-   * Which signed-in account counts as the admin. This drives the UI only --
-   * the same address lives in admin_email() in the schema, and that copy is
-   * the one that is enforced.
-   */
-  adminEmail: process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "",
   basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? "",
 };
 
@@ -24,6 +18,5 @@ export function configProblems(): string[] {
   const problems: string[] = [];
   if (!config.supabaseUrl) problems.push("NEXT_PUBLIC_SUPABASE_URL is not set");
   if (!config.supabaseAnonKey) problems.push("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
-  if (!config.adminEmail) problems.push("NEXT_PUBLIC_ADMIN_EMAIL is not set");
   return problems;
 }
