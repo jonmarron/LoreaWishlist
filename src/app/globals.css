@@ -1,26 +1,56 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #fbfaf8;
+  --surface: #ffffff;
+  --border: #e7e2da;
+  --foreground: #1c1917;
+  --muted: #78716c;
+  --accent: #b4541f;
+  --accent-soft: #fdf2ea;
+  --claimed: #3f6212;
+  --claimed-soft: #f2f7e8;
+  --danger: #b91c1c;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #16151a;
+    --surface: #201f26;
+    --border: #35333d;
+    --foreground: #f0efed;
+    --muted: #a09daa;
+    --accent: #fb923c;
+    --accent-soft: #2e2118;
+    --claimed: #a3e635;
+    --claimed-soft: #1e2414;
+    --danger: #f87171;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-claimed: var(--claimed);
+  --color-claimed-soft: var(--claimed-soft);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Keyboard focus stays visible everywhere; pointer clicks stay quiet. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
